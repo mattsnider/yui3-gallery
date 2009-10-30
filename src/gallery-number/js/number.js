@@ -1,5 +1,3 @@
-YUI.add('gallery-number', function(Y) {
-
 /**
  * Supplies sorely needed number evaluation and manipulation utilities.
  * This adds additional functionality to what is provided in yui-base, and the
@@ -221,11 +219,6 @@ Y.Number = {
 	},
 
 	/**
-	 * Computes a random integer from 'm'; if parameter n is passed, then computes a number in the range between 'm' and 'n'.
-	 * @method random
-	 * @param m {Number} Required. The maximum integer.
-	 * @param n {Number} Optional. The minimum integer.
-	 * @return {Number} A random integer.
 	 * @static
 	 */
 	random: function(m, n) {
@@ -268,5 +261,3 @@ Y.Number = {
 		return 0 === plen ? rs : rs * Math.pow(10, plen);
 	}
 };
-
-}, '3.0.0' );
