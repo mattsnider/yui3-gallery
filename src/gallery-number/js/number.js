@@ -36,7 +36,7 @@ Y.Number = {
 	 * @public
 	 */
 	abs: function(n) {
-		return _isNumber(n) ? Math.abs(n) : _getNaN();
+		return Math.abs(n);
 	},
 
 	/**
@@ -48,7 +48,7 @@ Y.Number = {
 	 * @public
 	 */
 	ceil: function(n) {
-		return _isNumber(n) ? Math.ceil(n) : _getNaN();
+		return Math.ceil(n);
 	},
 
 	/**
@@ -60,7 +60,7 @@ Y.Number = {
 	 * @public
 	 */
 	floor: function(n) {
-		return _isNumber(n) ? Math.floor(n) : _getNaN();
+		return Math.floor(n);
 	},
 
 	/**
@@ -204,7 +204,7 @@ Y.Number = {
 	 * @public
 	 */
 	round: function(n) {
-		return _isNumber(n) ? Math.round(n) : _getNaN();
+		return Math.round(n);
 	},
 
 	/**
@@ -233,7 +233,7 @@ Y.Number = {
 	 * @public
 	 */
 	sqrt: function(n) {
-		return _isNumber(n) ? Math.sqrt(n) : _getNaN();
+		return Math.sqrt(n);
 	}
 };
 
