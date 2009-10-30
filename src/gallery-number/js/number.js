@@ -219,6 +219,11 @@ Y.Number = {
 	},
 
 	/**
+	 * Calculates a random whole number between two values (inclusive).
+	 * @method random
+	 * @param m {Number} Required. The minimum value (or the maximum value if 'n' is not defined).
+	 * @param n {Number} Optional. The maximum value.
+	 * @return {Number} The random number.
 	 * @static
 	 */
 	random: function(m, n) {
