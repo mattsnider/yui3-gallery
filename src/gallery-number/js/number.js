@@ -219,10 +219,10 @@ Y.Number = {
 	},
 
 	/**
-	 * Calculates a random whole number between two values (inclusive).
+	 * Calculates a random whole number between two integers (inclusive).
 	 * @method random
-	 * @param m {Number} Required. The minimum value (or the maximum value if 'n' is not defined).
-	 * @param n {Number} Optional. The maximum value.
+	 * @param m {Number} Required. The minimum integer (or the maximum value if 'n' is not defined).
+	 * @param n {Number} Optional. The maximum integer.
 	 * @return {Number} The random number.
 	 * @static
 	 */
