@@ -1,24 +1,17 @@
-/*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
-Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
-*/
 YUI.add('gallery-number', function(Y) {
 
 /**
- * Supplies number manipulation utilities and exposes the more powerful Math
- * methods directly on the Y.Number namespace.
+ * Supplies sorely needed number evaluation and manipulation utilities.
  * This adds additional functionality to what is provided in yui-base, and the
- * methods are applied directly to the YUI instance.  This module
+ * methods are applied directly to the YUI instance. This module
  * is useful for sites that manipulate many numbers.
  * @module gallery-number
  */
 
-var L  = Y.Lang,
+var L = Y.Lang,
 	_isNumber = L.isNumber,
-	_getNaN = function() {return parseInt('a', 10);};
+	nan = Number.NaN,
+	_knownPrimes = [3, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199];
 
 /**
  * The following methods are added to the YUI instance
@@ -28,58 +21,33 @@ var L  = Y.Lang,
 Y.Number = {
 
 	/**
-	 * Returns the absolute value of number provided; wrapper for 'Math.abs'. Will return Not a Number (NaN).
-	 * @method abs
-	 * @param n {Number} Required. A number to convert.
-	 * @return {Number} The absolute value of 'n'.
-	 * @see Math.abs
-	 * @public
+	 * Convert radians to degrees.
+	 * @method degrees
+	 * @param radian {Number} Required. The number to convert.
+	 * @return {Number} The degrees.
+	 * @static
 	 */
-	abs: function(n) {
-		return Math.abs(n);
+	degrees: function(radian) {
+		return _isNumber(radian) ? radian * 180 / Math.PI : nan;
 	},
 
 	/**
-	 * Returns the ceiling value of number provided; wrapper for 'Math.ceil'. Will return Not a Number (NaN).
-	 * @method ceil
-	 * @param n {Number} Required. A number to convert.
-	 * @return {Number} The rounded value of 'n'.
-	 * @see Math.ceil
-	 * @public
-	 */
-	ceil: function(n) {
-		return Math.ceil(n);
-	},
-
-	/**
-	 * Returns the ceiling value of number provided; wrapper for 'Math.floor'. Will return Not a Number (NaN).
-	 * @method floor
-	 * @param n {Number} Required. A number to convert.
-	 * @return {Number} The rounded value of 'n'.
-	 * @see Math.floor
-	 * @public
-	 */
-	floor: function(n) {
-		return Math.floor(n);
-	},
-
-	/**
-	 * Formats the number according to the 'format' string; adherses to the american number standard where a comma is inserted after every 3 digits.
-	 *  Note: there should be only 1 contiguous number in the format, where a number consists of digits, period, and commas
-	 *        any other characters can be wrapped around this number, including '$', '%', or text
-	 *        examples (123456.789):
-	 *          '0' - (123456) show only digits, no precision
-	 *          '0.00' - (123456.78) show only digits, 2 precision
-	 *          '0.0000' - (123456.7890) show only digits, 4 precision
-	 *          '0,000' - (123,456) show comma and digits, no precision
-	 *          '0,000.00' - (123,456.78) show comma and digits, 2 precision
-	 *          '0,0.00' - (123,456.78) shortcut method, show comma and digits, 2 precision
-	 *	Note: Fails on formats with multiple periods.
+	 * Formats the number according to the 'format' string; adherses to the american number standard where a comma is inserted after every  digits.
+	 * Note: there should be only 1 contiguous number in the format, where a number consists of digits, period, and commas
+	 * any other characters can be wrapped around this number, including '$', '%', or text
+	 * examples (123456.789):
+	 * '0' - (123456) show only digits, no precision
+	 * '0.00' - (123456.78) show only digits, 2 precision
+	 * '0.0000' - (123456.7890) show only digits, 4 precision
+	 * '0,000' - (123,456) show comma and digits, no precision
+	 * '0,000.00' - (123,456.78) show comma and digits, 2 precision
+	 * '0,0.00' - (123,456.78) shortcut method, show comma and digits, 2 precision
+	 * Note: Fails on formats with multiple periods.
 	 * @method format
 	 * @param n {Number} Required. A number to convert.
 	 * @param format {String} Required. The way you would like to format this text.
 	 * @return {String} The formatted number.
-	 * @public
+	 * @static
 	 */
 	format: function(n, format) {
 		if (! _isNumber(n)) {return '';}
@@ -111,10 +79,10 @@ Y.Number = {
 			psplit = fnum.split('.');
 
 			var cnum = psplit[0],
-				parr = [],
-				j = cnum.length,
-				x = Math.floor(j / 3),
-				y = (cnum.length % 3) || 3; // y cannot be ZERO or causes infinite loop
+			parr = [],
+			j = cnum.length,
+			x = Math.floor(j / 3),
+			y = (cnum.length % 3) || 3; // y cannot be ZERO or causes infinite loop
 
 			// break the number into chunks of 3 digits; first chunk may be less than 3
 			for (var i = 0; i < j; i += y) {
@@ -131,7 +99,7 @@ Y.Number = {
 		}
 
 		// replace the number portion of the format with fnum
-		return format.replace(/[\d,?\.?]+/, fnum);
+		return format.replace(/[\d,\.]+/, fnum);
 	},
 
 	/**
@@ -139,11 +107,11 @@ Y.Number = {
 	 * @method getPrecision
 	 * @param n {Number} Required. A number to convert.
 	 * @return {Number} The number of significant figures.
-	 * @public
+	 * @static
 	 */
 	getPrecision: function(n) {
-		if (! _isNumber(n)) {return _getNaN();}
-		var sb = ('' + Y.Number.abs(n)).split('.');
+		if (! _isNumber(n)) {return nan;}
+		var sb = ('' + Math.abs(n)).split('.');
 		return 1 === sb.length ? 0 : sb[1].length;
 	},
 
@@ -155,12 +123,23 @@ Y.Number = {
 	 * @param j {Number} Required. The upper bound of the range.
 	 * @param inclusive {Boolean} Optional. True if i and j are to be included in the range.
 	 * @return {Boolean} True if i < n < j or j > n > i.
-	 * @public
+	 * @static
 	 */
 	isBetween: function(n, i, j, inclusive) {
 		if (! (_isNumber(n) && _isNumber(i) && _isNumber(j))) {return false;}
 		return inclusive ? ((i <= n && j >= n) || (j <= n && i >= n)) :
-						   ((i < n && j > n) || (j < n && i > n));
+			((i < n && j > n) || (j < n && i > n));
+	},
+
+	/**
+	 * Evaluate if the number is even.
+	 * @method isEven
+	 * @param  n {Number} Required. A number to evaluate.
+	 * @return {Boolean} The number is even.
+	 * @static
+	 */
+	isEven: function(n) {
+		return _isNumber(n) ? 0 ===  n % 2 : nan;
 	},
 
 	/**
@@ -171,10 +150,74 @@ Y.Number = {
 	 * @param j {Number} Required. The upper bound of the range.
 	 * @param inclusive {Boolean} Optional. True if i and j are to be included in the range.
 	 * @return {Boolean} True if i > n || val > j.
-	 * @public
+	 * @static
 	 */
 	isNotBetween: function(n, i, j, inclusive) {
 		return (_isNumber(n) && _isNumber(i) && _isNumber(j)) && ! Y.Number.isBetween(n, i, j, inclusive);
+	},
+
+	/**
+	 * Evaluate if the number is odd.
+	 * @method isOdd
+	 * @param  n {Number} Required. A number to evaluate.
+	 * @return {Boolean} The number is odd.
+	 * @static
+	 */
+	isOdd: function(n) {
+		return _isNumber(n) ? 0 !==  n % 2 : nan;
+	},
+
+	/**
+	 * Evaluate if a number is a prime.
+	 * @methid isPrime
+	 * @param n {Number} Required. A number to evaluate.
+	 * @return {Boolean} Is a prime.
+	 * @static
+	 */
+	isPrime: function(n) {
+		if (_isNumber(n)) {
+			if (2 === n || 5 === n) {return true;} // two-special primes
+
+			// is even
+			if (n % 2) {
+				var val, prime, sqrt, i, j;
+
+				// less than 200, check known primes
+				if (200 > n) {
+					return -1 < Y.Array.indexOf(_knownPrimes, n);
+				}
+
+				// more than 200, divide by known primes
+				sqrt = Math.sqrt(n);
+
+				for (i=0, j=_knownPrimes.length; i < j; i += 1) {
+					prime = _knownPrimes[i];
+					val = n / prime;
+
+					if (val === Math.round(val)) {
+						return false;
+					}
+
+					// when greater than the sqrt, go ahead and stop
+					if (prime > sqrt) {return true;}
+				}
+
+				return true;
+			}
+		}
+
+		return false;
+	},
+
+	/**
+	 * Convert degrees to radians.
+	 * @method radians
+	 * @param degrees {Number} Required. The number to convert.
+	 * @return {Number} The radians.
+	 * @static
+	 */
+	radians: function(degrees) {
+		return _isNumber(degrees) ? degrees * Math.PI / 180 : nan;
 	},
 
 	/**
@@ -183,57 +226,46 @@ Y.Number = {
 	 * @param m {Number} Required. The maximum integer.
 	 * @param n {Number} Optional. The minimum integer.
 	 * @return {Number} A random integer.
-	 * @public
+	 * @static
 	 */
 	random: function(m, n) {
-		if (! _isNumber(m)) {return _getNaN();}
+		if (! _isNumber(m)) {return nan;}
 		if (n === m) {return n;}
 		if (! n) {n = 0;}
 		var max = (n < m) ? m : n,
-			min = n === max ? m : n;
+		min = n === max ? m : n;
 
 		return min + Math.floor(Math.random() * (max - min) + 1);
 	},
 
 	/**
-	 * Rounds a number to the nearest integer; wrapper for 'Math.round'. Will return Not a Number (NaN).
-	 * @method round
-	 * @param n {Number} Required. A number to convert.
-	 * @return {Number} The rounded value of 'n'.
-	 * @see Math.round
-	 * @public
-	 */
-	round: function(n) {
-		return Math.round(n);
-	},
-
-	/**
 	 * Rounds to the next whole number at a given precision.
-	 * @method roundToPrecision
+	 * @method roundToDigit
 	 * @param n {Number} Required. A number to convert.
-	 * @param prec {Number} Optional. The precision to round to: 1, 10, 100, etc...; default is 10, which rounds to the nearest tenth.
+	 * @param prec {Number} Required. The precision to round to: 1, 10, 100, etc...; default is 10, which rounds to the nearest tenth.
 	 * @return {Number} The converted number.
-	 * @public
+	 * @static
 	 */
-	roundToPrecision: function(n, prec) {
-		if (! _isNumber(n)) {return _getNaN();}
-		if (1 > n) {return 1;}
-		var pstr = ('' + prec),
-			precision = _isNumber(prec) ? (Math.pow(10, pstr.length) / 10) : 10;
-		return Math.ceil(n / precision) * precision;
-	},
+	roundToDigit: function(n, prec) {
+		if (! (_isNumber(n) || _isNumber(prec))) {return nan;}
+		var neg = 0 > n,
+			narr = ('' + Math.abs(n)).split('.'),
+			wnum = narr[0],
+			dnum = narr[1] ? narr[1] : '',
+			plen = ('' + prec).length - 1,
+			wlen = wnum.length,
+			i, rs;
 
-	/**
-	 * Returns the square root of a number; wrapper for 'Math.sqrt'. Will return Not a Number (NaN).
-	 * @method sqrt
-	 * @param n {Number} Required. A number to convert.
-	 * @return {Number} The sqrt value of 'n'.
-	 * @see Math.sqrt
-	 * @note Negative numbers are not yet supported; they return NaN.
-	 * @public
-	 */
-	sqrt: function(n) {
-		return Math.sqrt(n);
+		// pad length of number, if less than precision
+		for (i=wlen; i<plen; i+= 1) {
+			wnum = '0' + wnum;
+		}
+
+		rs = parseFloat(wnum.substr(0, wlen - plen) + '.' + wnum.substr(wlen - plen) + dnum);
+		rs = Math.round(rs);
+		if (neg) {rs *= -1;}
+
+		return 0 === plen ? rs : rs * Math.pow(10, plen);
 	}
 };
 
