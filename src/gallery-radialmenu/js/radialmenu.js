@@ -561,6 +561,7 @@ var	CLS_PANEL = 'yui-' + Y.RadialMenuPanel.NAME.toLowerCase(),
 				panel.set('index', i);
 				panel.set('centerpt', [pt[0] - (reg.width / 2), pt[1] - (reg.height / 2)]);
 				panel.set('radialpt', [x,y]);
+				panel.set('zIndex', 100 + i);
 				panel[panel.get('rendered') ? 'syncUI' : 'render']();
 				panel[isShow ? 'show' : 'hide']();
 				panel.after(panel._handleMouseEnter, function() {_this._selectedPanel = panel});
