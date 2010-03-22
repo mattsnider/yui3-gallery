@@ -546,7 +546,7 @@ var	CLS_PANEL = 'yui-' + Y.RadialMenuPanel.NAME.toLowerCase(),
 
 				RadialMenu.superclass.show.apply(_this, arguments);
 			}
-			
+
 			Y.later(200, _this, _this.bindUI);
 		},
 
@@ -569,7 +569,7 @@ var	CLS_PANEL = 'yui-' + Y.RadialMenuPanel.NAME.toLowerCase(),
 					viewport.top + (viewport.height - 5) / 2
 				];
 			}
-			
+
 			Y.each(panels, function(panel, i) {
 				reg = panel.get('boundingBox').get('region');
 				a = (angle * i - 90) * Math.PI / 180;
