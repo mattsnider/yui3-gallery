@@ -567,7 +567,7 @@ var	CLS_PANEL = 'yui-' + Y.RadialMenuPanel.NAME.toLowerCase(),
 					viewport.top + (viewport.height - 5) / 2
 				];
 			}
-
+			
 			Y.each(panels, function(panel, i) {
 				reg = panel.get('boundingBox').get('region');
 				a = (angle * i - 90) * Math.PI / 180;
