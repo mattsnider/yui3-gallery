@@ -730,8 +730,8 @@ if (Y.Anim && Y.Plugin) {
 				return points;
 			},
 
-			rotateOut: function(anim, centerpt, radialpt) {
-				anim.set('to', {
+			rotateOut: function(oAnim, centerpt, radialpt) {
+				oAnim.set('to', {
 					curve: this.rotateOutCurve(centerpt, radialpt)
 				})
 			},
