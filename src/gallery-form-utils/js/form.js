@@ -6,7 +6,7 @@ Lang = Y.Lang,
 
 /**
  *  The Form Object provides APIs for searching and serializing forms.
- *  @class FormUtil
+ *  @class FormUtils
  */
 Form = {
 
@@ -115,4 +115,4 @@ Form = {
 	}
 };
 
-Y.FormUtil = Form;
+Y.FormUtils = Form;

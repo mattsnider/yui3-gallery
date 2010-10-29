@@ -2,7 +2,7 @@
  * These Form utility functions are thanks in a large part to the Prototype group. I have modified them to improve
  * 	performance, remove redundancy, and get rid of the magic array crap. Use these functions to work with forms fields.
  *
- * @class FormUtilField
+ * @class FormUtilsField
  */
 var FormField = {
 
@@ -241,4 +241,4 @@ var FormField = {
 	}
 };
 
-Y.FormUtilField = FormField;
+Y.FormUtilsField = FormField;
