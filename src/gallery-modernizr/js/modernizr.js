@@ -30,7 +30,7 @@
  * @contributor   Ben Alman
  */
 
-window.Modernizr = (function(window,doc,undefined){
+Y.Modernizr = (function(window,doc,undefined){
 
     var version = '1.6',
 
