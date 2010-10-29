@@ -2,7 +2,7 @@
  * These Form utility functions are thanks in a large part to the Prototype group. I have modified them to improve
  * 	performance, remove redundancy, and get rid of the magic array crap.
  *
- * @class FormUtilFieldSerializers
+ * @class FormUtilsFieldSerializers
  */
 FormFieldSerializers = {
 	input: function(elFld) {
@@ -59,4 +59,4 @@ FormFieldSerializers = {
 	}
 };
 
-Y.FormUtilFieldSerializers = FormFieldSerializers;
+Y.FormUtilsFieldSerializers = FormFieldSerializers;
