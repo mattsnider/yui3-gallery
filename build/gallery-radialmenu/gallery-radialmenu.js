@@ -777,4 +777,4 @@ if (Y.Anim && Y.Plugin) {
 }
 
 
-}, '@VERSION@' ,{optional:['anim', 'plugin'], requires:['overlay', 'collection', 'event-mouseenter', 'node']});
+}, 'gallery-2010.03.29-18-07' ,{optional:['anim', 'plugin'], requires:['overlay', 'collection', 'event-mouseenter', 'node']});
