@@ -93,7 +93,7 @@ Form = {
 			sSelector += '[name=' + sName + ']';
 		}
 
-		return elForm.all('input');
+		return elForm.all(sSelector);
 	},
 
 	/**
