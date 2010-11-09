@@ -92,8 +92,8 @@ Form = {
 		if (sName) {
 			sSelector += '[name=' + sName + ']';
 		}
-
-		return elForm.all('input');
+		
+		return elForm.all(sSelector);
 	},
 
 	/**
