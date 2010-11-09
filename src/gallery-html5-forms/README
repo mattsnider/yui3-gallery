@@ -1,0 +1,26 @@
+HTML5 Forms for YUI 3, by Matt Snider (http://github.com/mattsnider/)
+
+I. Changelog
+
+29.10.2010 - Initial upload
+
+
+II. Roadmap
+
+* more support for new html5 input types (currently only `email` and `url` are validated (possible optional UI components as well)
+* allow developers to specify which features to use
+* allow developers to override html5 default behavior for some features
+* event delegation for blur and focus, so we don't have to attach to each input
+
+III. Notes
+
+To use:
+
+oForm = new Y.HTML5_form_support({boundingBox: 'pathToYourForm'});
+oForm.render();
+
+New Attributes:
+
+aftervalidationfx - a function that will be called after any field is blurred and validated; for HTML 5 enabled browsers this will use the ':invalid' and ':valid' psedo classes to determine validity
+btnsubmit - CSS path to the submit button; if defined, the submit button will become disabled when a form field is invalid
+supported - public variable to indicate if the system delegated to HTML 5; only written once
