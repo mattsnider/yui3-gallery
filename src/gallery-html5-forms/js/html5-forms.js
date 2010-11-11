@@ -1,409 +1,540 @@
-YUI.add('gallery-html5-forms', function(Y) {
+/*
+ * todo: need to support various additional input types by default -mes
+ */
 
-	/*
-	 * todo: need to support various additional input types by default -mes
-	 */
+// for debugging purposes
+if (Y.JSON) {
+	Y.log("Y.Modernizr.input attribute support=" + Y.JSON.stringify(Y.Modernizr.input));
+	Y.log("Y.Modernizr.input type support=" + Y.JSON.stringify(Y.Modernizr.inputtypes));
+}
 
-	// for debugging purposes
-	if (Y.JSON) {
-		Y.log("Y.Modernizr.input attribute support=" + Y.JSON.stringify(Y.Modernizr.input));
-		Y.log("Y.Modernizr.input type support=" + Y.JSON.stringify(Y.Modernizr.inputtypes));
-	}
+/**
+ * Attaches the `blur` callback function to the element; also considers a `keydown` with a 1 second timeout a `blur`.
+ * @method _getter
+ * @param  elNode {Node} Required. The node instance.
+ * @param  fnCallback {String} Required. The blur callback function
+ * @private
+ */
+function _blur_or_keydown(elNode, fnCallback) {
+	var timeoutId;
 
-	function _blur_or_keydown(elNode, fnCallback) {
-		var timeoutId;
+	elNode.on('blur', function() {
+		clearTimeout(timeoutId);
+		fnCallback.apply(elNode, arguments);
+	});
 
-		elNode.on('blur', function() {
-			clearTimeout(timeoutId);
+	elNode.on('keydown', function() {
+		clearTimeout(timeoutId);
+		timeoutId = setTimeout(function() {
 			fnCallback.apply(elNode, arguments);
-		});
+		}, 1000);
+	});
+}
 
-		elNode.on('keydown', function() {
-			clearTimeout(timeoutId);
-			timeoutId = setTimeout(function() {
-				fnCallback.apply(elNode, arguments);
-			}, 1000);
-		});
+/**
+ * Evaluates if the `max` attribute is greater than or equal to the value; returns true if attribute is not defined.
+ * @method _evaluate_attr_max
+ * @param  elNode {Node} Required. The node instance.
+ * @return {Boolean} Valid?
+ * @private
+ */
+function _evaluate_attr_max(elNode) {
+	var max = elNode.get(MAX);
+	return Lang.isValue(max) ? _intvalue(value) >= max : true;
+}
+
+/**
+ * Evaluates if the `min` attribute is less than or equal to the value; returns true if attribute is not defined.
+ * @method _evaluate_attr_min
+ * @param  elNode {Node} Required. The node instance.
+ * @return {Boolean} Valid?
+ * @private
+ */
+function _evaluate_attr_min(elNode) {
+	var min = elNode.get(MIN);
+	return Lang.isValue(min) ? _intvalue(value) <= min : true;
+}
+
+/**
+ * Evaluates if the value matches the regex in the `pattern` attribute; returns true if attribute is not defined.
+ * @method _evaluate_attr_max
+ * @param  elNode {Node} Required. The node instance.
+ * @return {Boolean} Valid?
+ * @private
+ */
+function _evaluate_attr_pattern(elNode) {
+	var pattern = elNode.get(PATTERN),
+		rx;
+
+	if (pattern) {
+		rx = RegExp(pattern);
+		return value.match(rx);
 	}
 
-	/**
-	 * Handles the fetching of an attribute's value from the DOM node.
-	 * @method _getter
-	 * @param  elNode {Node} Required. The node instance.
-	 * @param  sAttr {String} Required. The attribute name.
-	 * @return {String} The attribute value.
-	 * @private
-	 */
-	function _getter(elNode, sAttr) {
-		return elNode[sAttr] || elNode.getAttribute(sAttr);
-	}
+	return true;
+}
 
-	/**
-	 * Handles the fetching of an attribute's existence from the DOM node.
-	 * @method _has
-	 * @param  elNode {Node} Required. The node instance.
-	 * @param  sAttr {String} Required. The attribute name.
-	 * @return {Boolean} The attribute exists.
-	 * @private
-	 */
-	function _has(elNode, sAttr) {
-		return elNode.hasAttribute(sAttr);
-	}
+/**
+ * Handles the updating of the placeholder text for a node.
+ * @method _evaluate_attr_placeholder
+ * @param  elNode {Node} Required. The node instance.
+ * @private
+ */
+function _evaluate_attr_placeholder(elNode) {
+	var sPlaceholderText = elNode.get(PLACEHOLDER),
+		sValue = elNode.getValue();
 
-	/**
-	 * Converts the value to a number; null indicates failure.
-	 * @method _intvalue
-	 * @param value {String} Required. The value to convert.
-	 * @return {Number} The value as a number.
-	 * @private
-	 */
-	function _intvalue(value) {
-		try {
-			return parseInt(value);
+	if (sPlaceholderText) {
+		if (sValue && sValue != sPlaceholderText) {
+			_update_placeholder_class(elNode, false);
 		}
-		catch(e) {
-			return null;
+		else {
+			elNode.set('value', sPlaceholderText);
+			_update_placeholder_class(elNode, true);
 		}
 	}
+}
+
+/**
+ * Evaluates if there is a value and that it is not equal to the placeholder text; returns true if attribute is not defined.
+ * @method _evaluate_attr_required
+ * @param  elNode {Node} Required. The node instance.
+ * @return {Boolean} Valid?
+ * @private
+ */
+function _evaluate_attr_required(elNode) {
+	var sPlaceholderText = elNode.get(PLACEHOLDER),
+		sValue = elNode.getValue();
+
+	return elNode.get(REQUIRED) ? sValue && sValue != sPlaceholderText : true;
+}
+
+/**
+ * Handles the fetching of an attribute's value from the DOM node.
+ * @method _getter
+ * @param  elNode {Node} Required. The node instance.
+ * @param  sAttr {String} Required. The attribute name.
+ * @return {String} The attribute value.
+ * @private
+ */
+function _getter(elNode, sAttr) {
+	return elNode[sAttr] || elNode.getAttribute(sAttr);
+}
+
+/**
+ * Handles the fetching of an attribute's existence from the DOM node.
+ * @method _has
+ * @param  elNode {Node} Required. The node instance.
+ * @param  sAttr {String} Required. The attribute name.
+ * @return {Boolean} The attribute exists.
+ * @private
+ */
+function _has(elNode, sAttr) {
+	return elNode.hasAttribute(sAttr);
+}
+
+/**
+ * Converts the value to a number; null indicates failure.
+ * @method _intvalue
+ * @param value {String} Required. The value to convert.
+ * @return {Number} The value as a number.
+ * @private
+ */
+function _intvalue(value) {
+	try {
+		return parseInt(value);
+	}
+	catch(e) {
+		return null;
+	}
+}
+
+/**
+ * Handles the setting of an attribute's value for a DOM node.
+ * @method _setter
+ * @param  elNode {Node} Required. The node instance.
+ * @param  sAttr {String} Required. The attribute name.
+ * @param  val {String} Required. The new attribute value.
+ * @private
+ */
+function _setter(elNode, sAttr, val) {
+	elNode[sAttr] = val;
+	elNode.setAttribute(sAttr, val);
+}
+
+/**
+ * Updates the placeholder class for the input.
+ * @method _update_placeholder_class
+ * @param  elNode {Node} Required. The node instance.
+ * @param  bool {Boolean} Required. Indicates if placeholder class should be applied or removed.
+ * @private
+ */
+function _update_placeholder_class(elNode, bool) {
+	elNode.toggleClass(HTML5_form_support.CLS_PLACEHOLDER, bool);
+}
+
+/**
+ * Validates the value of the node.
+ * @method _validate
+ * @param  elNode {Node} Required. The node instance.
+ * @private
+ */
+function _validate(elNode) {
+	var isValid = true;
+
+	_evaluate_attr_placeholder(elNode);
+	
+	isValid = _evaluate_attr_required(elNode);
+	isValid = isValid && _evaluate_attr_pattern(elNode);
+	isValid = isValid && _evaluate_attr_max(elNode);
+	isValid = isValid && _evaluate_attr_min(elNode);
+
+	elNode.toggleClass(HTML5_form_support.CLS_VALID, isValid);
+	elNode.toggleClass(HTML5_form_support.CLS_INVALID, ! isValid);
+	return isValid;
+}
+
+// name shortcuts
+var AUTOFOCUS = 'autofocus',
+BOUNDING_BOX = 'boundingBox',
+MAX = 'max',
+MIN = 'min',
+PATTERN = 'pattern',
+PLACEHOLDER = 'placeholder',
+REQUIRED = 'required',
+STEP = 'step',
+SUPPORTED = 'html5supported',
+
+// regular expressions to support new HTML 5 input types
+RX = {
+	email: /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+	url: /((https?|ftp|gopher|telnet|file|notes|ms-help):((\/\/)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)/i
+},
+
+// framework shortcuts
+Lang = Y.Lang,
+
+HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 
 	/**
-	 * Handles the setting of an attribute's value for a DOM node.
-	 * @method _setter
-	 * @param  elNode {Node} Required. The node instance.
-	 * @param  sAttr {String} Required. The attribute name.
-	 * @param  val {String} Required. The new attribute value.
-	 * @private
+	 * Callback function for managing blurring of input elements.
+	 * @method _handleBlur
+	 * @param e {Event} Required. The javascript `blur` or `keydown` event.
+	 * @protected
 	 */
-	function _setter(elNode, sAttr, val) {
-		elNode[sAttr] = val;
-		elNode.setAttribute(sAttr, val);
-	}
-
-	/**
-	 * Updates the placeholder class for the input.
-	 * @method _update_placeholder_class
-	 * @param  elNode {Node} Required. The node instance.
-	 * @param  bool {Boolean} Required. Indicates if placeholder class should be applied or removed.
-	 * @private
-	 */
-	function _update_placeholder_class(elNode, bool) {
-		elNode[bool ? ADDCLASS : REMOVECLASS](HTML5_form_support.CLS_PLACEHOLDER);
-	}
-
-	/**
-	 * Validates the value of the node.
-	 * @method _validate
-	 * @param  elNode {Node} Required. The node instance.
-	 * @param  bHasValidation {Boolean} Required. Indicates that validation logic should occur.
-	 * @private
-	 */
-	function _validate(elNode, bHasValidation) {
-		var value = Lang.trim(elNode.get('value')),
-			max = elNode.get(MAX),
-			min = elNode.get(MIN),
-			placeholderText = elNode.get(PLACEHOLDER),
-			intvalue, isvalid, rx;
-
-		if (placeholderText) {
-			if (value && value != placeholderText) {
-				_update_placeholder_class(elNode, false);
-			}
-			else {
-				elNode.set('value', placeholderText);
-				_update_placeholder_class(elNode, true);
-			}
-		}
-
-		if (bHasValidation) {
-			if (elNode.get(REQUIRED)) {
-				isvalid = value && value != placeholderText;
-			}
-
-			if (isvalid && elNode.get(PATTERN)) {
-				rx = RegExp(elNode.get(PATTERN));
-				isvalid = value.match(rx);
-			}
-
-			if (isvalid && max || min) {
-				intvalue = _intvalue(value);
-				isvalid = (max && max >= intvalue) && (min && min <= intvalue);
-			}
-
-			elNode[isvalid ? ADDCLASS : REMOVECLASS](HTML5_form_support.CLS_VALID);
-			elNode[! isvalid ? ADDCLASS : REMOVECLASS](HTML5_form_support.CLS_INVALID);
-			return isvalid;
-		}
-
-		return true;
-	}
-
-	var ADDCLASS = 'addClass',
-	AUTOFOCUS = 'autofocus',
-	BOUNDING_BOX = 'boundingBox',
-	MAX = 'max',
-	MIN = 'min',
-	PATTERN = 'pattern',
-	PLACEHOLDER = 'placeholder',
-	REMOVECLASS = 'removeClass',
-	REQUIRED = 'required',
-	STEP = 'step',
-	SUPPORTED = 'supported',
-
-	RX = {
-		email: /^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
-		url: /((https?|ftp|gopher|telnet|file|notes|ms-help):((\/\/)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)/
+	_handleBlur: function(e) {
+		var that = this,
+			elNode = e.target,
+			isValid = that.get(SUPPORTED) ? e.target.test('input:valid') : _validate(elNode);
+		
+		that.disableForm(isValid && that.isFormValid());
+		that.get('aftervalidationfx')(isValid, elNode, that);
 	},
 
-	Lang = Y.Lang,
+	/**
+	 * Callback function for managing the form submission; only allows submit events when form is valid.
+	 * @method _handleFocus
+	 * @param e {Event} Required. The javascript `blur` or `keydown` event.
+	 * @protected
+	 */
+	_handleFocus: function(e) {
+		var elNode = e.target,
+			sPlaceholderText = elNode.get(PLACEHOLDER),
+			value = elNode.getValue();
+		
+		if (value == sPlaceholderText) {
+			elNode.set('value', '');
+			_update_placeholder_class(elNode, false);
+		}
+	},
 
-	HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
+	/**
+	 * Callback function for managing the form submission; only allows submit events when form is valid.
+	 * @method _handleSubmit
+	 * @param e {Event} Required. The javascript `submit` event.
+	 * @protected
+	 */
+	_handleSubmit: function(e) {
+		var bValid = true,
+			submitfx = this.get('submitfx');
 
-		bindUI: function() {
-			var that = this,
-				aInputs = that._inputs,
-				hasAutofocusAlready = false,
-				elBb = that.get(BOUNDING_BOX),
-				bAttachForm = false;
+		this._inputs.each(function(node) {
+			bValid = bValid && _validate(node);
+		});
 
-			if (aInputs) {
-				aInputs.each(function(elNode) {
-					var sPattern = elNode.get(PATTERN),
-						bHasValidation =
-						elNode.get(MAX) ||
-						elNode.get(MIN) ||
-						elNode.get(PATTERN) ||
-						elNode.get(REQUIRED),
-						sPlaceholderText = elNode.get(PLACEHOLDER),
-						sType = elNode.get('type');
+		if (submitfx || ! bValid) {
+			e.halt();
 
-					if (! that.get(SUPPORTED)) {
-						if (sType && RX[sType] && ! sPattern) {
-							elNode.set(PATTERN, RX[sType]);
-						}
+			if (submitfx) {
+				submitfx.call(e.target, e, this);
+			}
+		}
+	},
 
-						// handle autofocus
-						if (elNode.get(AUTOFOCUS) && ! hasAutofocusAlready) {
-							elNode.focus();
-							hasAutofocusAlready = true;
-						}
+	bindUI: function() {
+		var that = this,
+			hasAutofocusAlready = false,
+			elBb = that.get(BOUNDING_BOX),
+			bAttachForm = false,
+			bIsSupported = that.get(SUPPORTED);
 
-						// setup placeholder
-						if (sPlaceholderText) {
-							elNode.on('focus', function() {
-								var value = Lang.trim(elNode.get('value'));
-								if (value == sPlaceholderText) {
-									elNode.set('value', '');
-									_update_placeholder_class(elNode, false);
-								}
-							});
-						}
+		if (! bIsSupported) {
+			// todo: can we use the capture phase to delegate events instead?
+			that._inputs.each(function(elNode) {
+				var sPattern = elNode.get(PATTERN),
+					bHasValidation =
+					elNode.get(MAX) ||
+					elNode.get(MIN) ||
+					elNode.get(PATTERN) ||
+					elNode.get(REQUIRED),
+					sPlaceholderText = elNode.get(PLACEHOLDER),
+					sType = elNode.get('type');
 
-						_validate(elNode, bHasValidation);
-					}
-
-					if (bHasValidation || sPlaceholderText) {
-						bAttachForm = true;
-						_blur_or_keydown(elNode, function() {
-							var isValid = that.get(SUPPORTED) ? elNode.test('input:valid') : _validate(this,bHasValidation);
-							that.disableSubmitButton(isValid && that.isFormValid());
-							that.get('aftervalidationfx')(isValid, this, that);
-						});
-					}
-				});
-
-				if (bAttachForm && 'FORM' == elBb.get('tagName').toUpperCase()) {
-					elBb.on('submit', function(e) {
-						var bValid = true;
-
-						aInputs.each(function(node) {
-							bValid = bValid && _validate(node, true);
-						});
-
-						if (! bValid) {
-							e.halt();
-						}
-					});
+				// special rx to handle validation of new HTML 5 types
+				if (sType && RX[sType] && ! sPattern) {
+					elNode.set(PATTERN, RX[sType]);
 				}
-			}
-		},
 
-		/**
-		 * Change the disabled attribute of the submit button.
-		 * @method disableSubmitButton
-		 * @param  isValid {Boolean} The form is valid.
-		 * @public
-		 */
-		disableSubmitButton: function(isValid) {
-			if (this.btnsubmit) {
-				this.btnsubmit[isValid ? 'removeAttribute' : 'set']('disabled', 'disabled');
-			}
-		},
-
-		initializer: function() {
-			var that = this,
-				supported =
-				Y.Modernizr.input.autofocus &&
-				Y.Modernizr.input.max &&
-				Y.Modernizr.input.min &&
-				Y.Modernizr.input.pattern &&
-				Y.Modernizr.input.placeholder &&
-				Y.Modernizr.input.required &&
-				Y.Modernizr.input.step,
-				aftervalidationfx = this.get('aftervalidationfx'),
-				elBb = that.get(BOUNDING_BOX);
-
-			that.set(SUPPORTED, supported);
-			that.btnsubmit = elBb.one(that.get('submitbtn'));
-
-			// don't do anything if HTML 5 enabled
-			if (supported) {
-				Y.log('Browser completely supports HTML 5 forms; NOT using HTML5_form_support.');
-
-				if (aftervalidationfx && 'FORM' == elBb.get('tagName').toUpperCase()) {
-					that.populateInputs();
+				// handle autofocus; only autofocuses on the first element
+				if (elNode.get(AUTOFOCUS) && ! hasAutofocusAlready) {
+					elNode.focus();
+					hasAutofocusAlready = true;
 				}
-			}
-			else {
-				Y.log('Browser does not support all HTML 5 forms; using HTML5_form_support.');
-				that.populateInputs();
-			}
-		},
 
-		/**
-		 * Checks if the current browser supports the specified attribute.
-		 * @method isAttributeSupported
-		 * @param  sAttr {String} Required. The attribute name.
-		 * @return {Mixed} Modernizr value for input attribute.
-		 * @public
-		 */
-		isAttributeSupported: function(sAttr) {
-			return Y.Modernizr.input[sAttr];
-		},
+				// setup placeholder
+				if (sPlaceholderText) {
+					elNode.on('focus', Y.bind(that._handleFocus, that));
+				}
 
-		/**
-		 * Check if inputs are in a known good state.
-		 * @method isFormValid
-		 * @return {boolean} Indicates valid form.
-		 * @public
-		 */
-		isFormValid: function(fnCallback) {
-			var that = this,
-				isValid = true;
+				_validate(elNode);
 
-			// ensure inputs are populated first
-			if (! that._inputs) {
-				that.populateInputs();
-			}
-
-			that._inputs.each(function(el) {
-				isValid = isValid && (el.hasClass(HTML5_form_support.CLS_VALID) || el.test('input:valid'));
+				if (bHasValidation || sPlaceholderText) {
+					bAttachForm = true; // optimization: don't attach submit handler, if no HTML5 attributes
+					_blur_or_keydown(elNode, Y.bind(that._handleBlur, that));
+				}
 			});
+		}
 
-			return isValid;
+		if ((bAttachForm || that.get('submitfx')) && that._form) {
+			elBb.on('submit', Y.bind(that._handleSubmit, that));
+		}
+	},
+
+	/**
+	 * Change the disabled attribute of the submit button and form.
+	 * @method disableForm
+	 * @param  isValid {Boolean} The form is valid.
+	 * @public
+	 */
+	disableForm: function(isValid) {
+		if (this._form) {
+			this._form[isValid ? 'removeAttribute' : 'set']('disabled', 'disabled');
+		}
+		
+		if (this._btnsubmit) {
+			this._btnsubmit[isValid ? 'removeAttribute' : 'set']('disabled', 'disabled');
+		}
+	},
+
+	initializer: function() {
+		var that = this,
+			supported =
+			Y.Modernizr.input.autofocus &&
+			Y.Modernizr.input.max &&
+			Y.Modernizr.input.min &&
+			Y.Modernizr.input.pattern &&
+			Y.Modernizr.input.placeholder &&
+			Y.Modernizr.input.required &&
+			Y.Modernizr.input.step,
+			aftervalidationfx = this.get('aftervalidationfx'),
+			elBb = that.get(BOUNDING_BOX);
+
+		that.set(SUPPORTED, supported);
+		that._btnsubmit = elBb.one(that.get('submitbtn'));
+		that._form = 'FORM' == elBb.get('tagName').toUpperCase() ? elBb : null;
+		that._inputs = new Y.NodeList([]);
+
+		// don't do anything if HTML 5 enabled
+		if (supported) {
+			Y.log('Browser completely supports HTML 5 forms; NOT using HTML5_form_support.');
+
+			if (aftervalidationfx && that._form) {
+				that.populateInputs();
+			}
+		}
+		else {
+			Y.log('Browser does not support all HTML 5 forms; using HTML5_form_support.');
+			that.populateInputs();
+		}
+	},
+
+	/**
+	 * Checks if the current browser supports the specified attribute.
+	 * @method isAttributeSupported
+	 * @param  sAttr {String} Required. The attribute name.
+	 * @return {String} Modernizr value for input attribute.
+	 * @public
+	 */
+	isAttributeSupported: function(sAttr) {
+		return Y.Modernizr.input[sAttr];
+	},
+
+	/**
+	 * Check if inputs are in a known good state.
+	 * @method isFormValid
+	 * @return {boolean} Indicates valid form.
+	 * @public
+	 */
+	isFormValid: function() {
+		var that = this,
+			isValid = true;
+
+		that._inputs.each(function(el) {
+			isValid = isValid && (el.hasClass(HTML5_form_support.CLS_VALID) || el.test('input:valid'));
+		});
+
+		return isValid;
+	},
+
+	/**
+	 * Finds the usable inputs in the form and sets to a variable; call to repopulate if form changes.
+	 * @method populateInputs
+	 * @public
+	 */
+	populateInputs: function() {
+		this._inputs = this.get(BOUNDING_BOX).all('input:not([type=hidden])');
+	},
+
+	renderUI: function() {
+	}
+},
+{
+	// class applied to the emulate browser placeholder styles
+	CLS_PLACEHOLDER: PLACEHOLDER,
+	
+	// emulates pseudo classes ':valid' and ':invalid'
+	CLS_VALID: 'valid',
+	CLS_INVALID: 'invalid',
+
+	ATTRS: {
+
+		/**
+		 * A callback function to execute after field evaluation.
+		 * @property aftervalidationfx
+		 * @type Function
+		 */
+		aftervalidationfx: {
+			validator: Lang.isFunction,
+			value: function() {}
 		},
 
 		/**
-		 * Finds the usable inputs in the form and sets to a variable; call to repopulate if form changes.
-		 * @method populateInputs
-		 * @public
+		 * A read only variable for determining if the current browser supports HTML 5.
+		 * @property html5supported
+		 * @readonly
 		 */
-		populateInputs: function() {
-			this._inputs = this.get(BOUNDING_BOX).all('input:not([type=hidden])');
+		html5supported: {
+			validator: Lang.isBoolean,
+			writeOnce: true
 		},
 
-		renderUI: function() {
+		/**
+		 * The CSS rule to find the submit button for your form. When defined, will automatically disable the button.
+		 * @property submitbtn
+		 * @type String
+		 */
+		submitbtn: {
+			value: 'button[type=submit]',
+			validator: Lang.isString
+		},
+
+		/**
+		 * A callback function to execute in place of normal form submission; passed the event and a reference to `this`; execution context is the form.
+		 * @property submitfx
+		 * @type Function
+		 */
+		submitfx: {
+			validator: Lang.isFunction,
+			value: null
 		}
+	}
+});
+
+// augumenting Y.Node with two useful functions
+Y.Node.prototype.getValue = function() {
+	return Lang.trim(this.get('value'));
+};
+
+Y.Node.prototype.toggleClass = function(className, bool) {
+	this[bool ? 'addClass' : 'removeClass'](className);
+};
+
+// augment Y.Node with HTML 5 attributes
+Y.mix(Y.Node.ATTRS, {
+	autofocus: {
+		getter: function() {
+			return _has(this._node,AUTOFOCUS);
+		},
+		setter: function(val) {
+			return _setter(this._node,AUTOFOCUS,val);
+		},
+		validator: Lang.isBoolean
 	},
-	{
-		// emulates pseudo classes ':valid' and ':invalid'
-		CLS_PLACEHOLDER: PLACEHOLDER,
-		CLS_VALID: 'valid',
-		CLS_INVALID: 'invalid',
+	max: {
+		getter: function() {
+			return _getter(this._node,MAX);
+		},
+		setter: function(val) {
+			return _setter(this._node,MAX,val);
+		},
+		validator: Lang.isNumber
+	},
+	min: {
+		getter: function() {
+			return _getter(this._node,MIN);
+		},
+		setter: function(val) {
+			return _setter(this._node,MIN,val);
+		},
+		validator: Lang.isNumber
+	},
+	pattern: {
+		getter: function() {
+			return _getter(this._node,PATTERN);
+		},
+		setter: function(val) {
+			return _setter(this._node,PATTERN,val);
+		},
+		validator: Lang.isString
+	},
+	placeholder: {
+		getter: function() {
+			return _getter(this._node,PLACEHOLDER);
+		},
+		setter: function(val) {
+			return _setter(this._node,PLACEHOLDER,val);
+		},
+		validator: Lang.isString
+	},
+	required: {
+		getter: function() {
+			return _has(this._node,REQUIRED);
+		},
+		setter: function(val) {
+			return _setter(this._node,REQUIRED,val);
+		},
+		validator: Lang.isBoolean
+	},
+	step: {
+		// todo: what do I want to do with step??? -mes
+		getter: function() {
+			return _getter(this._node,STEP);
+		},
+		setter: function(val) {
+			return _setter(this._node,STEP,val);
+		},
+		validator: Lang.isNumber
+	}
+});
 
-		ATTRS: {
-			aftervalidationfx: {
-				validator: Lang.isFunction,
-				value: function() {}
-			},
-			submitbtn: {
-				value: 'button[type=submit]',
-				validator: Lang.isString
-			},
-			supported: {
-				validator: Lang.isBoolean,
-				writeOnce: true
-			}
-		}
-	});
-
-	// augment Y.Node with HTML 5 attributes
-	Y.mix(Y.Node.ATTRS, {
-		autofocus: {
-			getter: function() {
-				return _has(this._node,AUTOFOCUS);
-			},
-			setter: function(val) {
-				return _setter(this._node,AUTOFOCUS,val);
-			},
-			validator: Lang.isBoolean
-		},
-		max: {
-			getter: function() {
-				return _getter(this._node,MAX);
-			},
-			setter: function(val) {
-				return _setter(this._node,MAX,val);
-			},
-			validator: Lang.isNumber
-		},
-		min: {
-			getter: function() {
-				return _getter(this._node,MIN);
-			},
-			setter: function(val) {
-				return _setter(this._node,MIN,val);
-			},
-			validator: Lang.isNumber
-		},
-		pattern: {
-			getter: function() {
-				return _getter(this._node,PATTERN);
-			},
-			setter: function(val) {
-				return _setter(this._node,PATTERN,val);
-			},
-			validator: Lang.isString
-		},
-		placeholder: {
-			getter: function() {
-				return _getter(this._node,PLACEHOLDER);
-			},
-			setter: function(val) {
-				return _setter(this._node,PLACEHOLDER,val);
-			},
-			validator: Lang.isString
-		},
-		required: {
-			getter: function() {
-				return _has(this._node,REQUIRED);
-			},
-			setter: function(val) {
-				return _setter(this._node,REQUIRED,val);
-			},
-			validator: Lang.isBoolean
-		},
-		step: {
-			// todo: what do I want to do with step??? -mes
-			getter: function() {
-				return _getter(this._node,STEP);
-			},
-			setter: function(val) {
-				return _setter(this._node,STEP,val);
-			},
-			validator: Lang.isNumber
-		}
-	});
-
-	Y.HTML5_form_support = HTML5_form_support;
-
-}, '@VERSION@', {requires: ['base', 'widget', 'node', 'gallery-modernizr'], optional: ['json']});
+Y.HTML5_form_support = HTML5_form_support;

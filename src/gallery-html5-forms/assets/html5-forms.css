@@ -1,0 +1,11 @@
+input.placeholder {
+	color: #999;
+}
+
+input.invalid {
+	border-color: #900;
+}
+
+input.valid {
+	border-color: #090;
+}
