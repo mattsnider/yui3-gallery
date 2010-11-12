@@ -2,10 +2,16 @@ input.placeholder {
 	color: #999;
 }
 
+textarea:invalid,
+textarea.invalid,
+input:invalid,
 input.invalid {
 	border-color: #900;
 }
 
+textarea:valid,
+textarea.valid,
+input:valid,
 input.valid {
 	border-color: #090;
 }

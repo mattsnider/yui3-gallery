@@ -2,6 +2,8 @@
  * todo: need to support various additional input types by default -mes
  */
 
+// todo: select should support autofocus & required
+
 // for debugging purposes
 if (Y.JSON) {
 	Y.log("Y.Modernizr.input attribute support=" + Y.JSON.stringify(Y.Modernizr.input));
@@ -24,9 +26,10 @@ function _blur_or_keydown(elNode, fnCallback) {
 	});
 
 	elNode.on('keydown', function() {
+		var args = arguments;
 		clearTimeout(timeoutId);
 		timeoutId = setTimeout(function() {
-			fnCallback.apply(elNode, arguments);
+			fnCallback.apply(elNode, args);
 		}, 1000);
 	});
 }
@@ -40,7 +43,7 @@ function _blur_or_keydown(elNode, fnCallback) {
  */
 function _evaluate_attr_max(elNode) {
 	var max = elNode.get(MAX);
-	return Lang.isValue(max) ? _intvalue(value) >= max : true;
+	return Lang.isValue(max) ? _intvalue(elNode.getValue()) <= max : true;
 }
 
 /**
@@ -52,7 +55,7 @@ function _evaluate_attr_max(elNode) {
  */
 function _evaluate_attr_min(elNode) {
 	var min = elNode.get(MIN);
-	return Lang.isValue(min) ? _intvalue(value) <= min : true;
+	return Lang.isValue(min) ? _intvalue(elNode.getValue()) >= min : true;
 }
 
 /**
@@ -68,7 +71,7 @@ function _evaluate_attr_pattern(elNode) {
 
 	if (pattern) {
 		rx = RegExp(pattern);
-		return value.match(rx);
+		return elNode.getValue().match(rx);
 	}
 
 	return true;
@@ -107,6 +110,35 @@ function _evaluate_attr_required(elNode) {
 		sValue = elNode.getValue();
 
 	return elNode.get(REQUIRED) ? sValue && sValue != sPlaceholderText : true;
+}
+
+/**
+ * Finds the real `type`, since non-HTML5 browsers will return 'text' for all non-standard types.
+ * @method _find_real_type
+ * @param  elNode {Node} Required. The node instance.
+ * @return {String} The actual `type` attribute value.
+ * @private
+ */
+function _find_real_type(elNode) {
+	var sId = elNode.get('id'),
+		sResult = elNode.get('type'),
+		sContent, rx1, rx2;
+
+	if ('text' == sResult.toLowerCase()) {
+		sContent = elNode.get('parentNode').get('innerHTML');
+		rx1 = new RegExp('.*?id="' + sId + '"\\s+type="(\\w+)".*', 'i');
+		rx2 = new RegExp('.*?type="(\\w+)"\\s+id="' + sId + '".*', 'i');
+		sResult = rx1.exec(sContent);
+
+		if (sResult) {
+			return sResult[1];
+		}
+		else {
+			sResult = rx2.exec(sContent);
+		}
+	}
+
+	return sResult ? sResult[1] : 'text';
 }
 
 /**
@@ -180,14 +212,20 @@ function _update_placeholder_class(elNode, bool) {
  * @private
  */
 function _validate(elNode) {
-	var isValid = true;
+	var isValid = true,
+		sTagName = elNode.get('tagName').toUpperCase();
 
-	_evaluate_attr_placeholder(elNode);
-	
+	if ('SELECT' != sTagName) {
+		_evaluate_attr_placeholder(elNode);
+	}
+
 	isValid = _evaluate_attr_required(elNode);
-	isValid = isValid && _evaluate_attr_pattern(elNode);
-	isValid = isValid && _evaluate_attr_max(elNode);
-	isValid = isValid && _evaluate_attr_min(elNode);
+
+	if ('INPUT' == sTagName) {
+		isValid = isValid && _evaluate_attr_pattern(elNode);
+		isValid = isValid && _evaluate_attr_max(elNode);
+		isValid = isValid && _evaluate_attr_min(elNode);
+	}
 
 	elNode.toggleClass(HTML5_form_support.CLS_VALID, isValid);
 	elNode.toggleClass(HTML5_form_support.CLS_INVALID, ! isValid);
@@ -258,7 +296,7 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 		var bValid = true,
 			submitfx = this.get('submitfx');
 
-		this._inputs.each(function(node) {
+		this._fields.each(function(node) {
 			bValid = bValid && _validate(node);
 		});
 
@@ -280,7 +318,7 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 
 		if (! bIsSupported) {
 			// todo: can we use the capture phase to delegate events instead?
-			that._inputs.each(function(elNode) {
+			that._fields.each(function(elNode) {
 				var sPattern = elNode.get(PATTERN),
 					bHasValidation =
 					elNode.get(MAX) ||
@@ -288,22 +326,23 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 					elNode.get(PATTERN) ||
 					elNode.get(REQUIRED),
 					sPlaceholderText = elNode.get(PLACEHOLDER),
-					sType = elNode.get('type');
+					sType = _find_real_type(elNode);
 
 				// special rx to handle validation of new HTML 5 types
 				if (sType && RX[sType] && ! sPattern) {
 					elNode.set(PATTERN, RX[sType]);
-				}
-
-				// handle autofocus; only autofocuses on the first element
-				if (elNode.get(AUTOFOCUS) && ! hasAutofocusAlready) {
-					elNode.focus();
-					hasAutofocusAlready = true;
+					bHasValidation = true;
 				}
 
 				// setup placeholder
 				if (sPlaceholderText) {
 					elNode.on('focus', Y.bind(that._handleFocus, that));
+				}
+
+				// handle autofocus; only autofocuses on the first element
+				if (elNode.get(AUTOFOCUS) && ! hasAutofocusAlready) {
+					setTimeout(function(){elNode.focus();}, 1); // timeout required for `focus` event to fire with placeholder text
+					hasAutofocusAlready = true;
 				}
 
 				_validate(elNode);
@@ -352,7 +391,7 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 		that.set(SUPPORTED, supported);
 		that._btnsubmit = elBb.one(that.get('submitbtn'));
 		that._form = 'FORM' == elBb.get('tagName').toUpperCase() ? elBb : null;
-		that._inputs = new Y.NodeList([]);
+		that._fields = new Y.NodeList([]);
 
 		// don't do anything if HTML 5 enabled
 		if (supported) {
@@ -389,8 +428,9 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 		var that = this,
 			isValid = true;
 
-		that._inputs.each(function(el) {
+		that._fields.some(function(el) {
 			isValid = isValid && (el.hasClass(HTML5_form_support.CLS_VALID) || el.test('input:valid'));
+			return ! isValid;
 		});
 
 		return isValid;
@@ -402,7 +442,12 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 	 * @public
 	 */
 	populateInputs: function() {
-		this._inputs = this.get(BOUNDING_BOX).all('input:not([type=hidden])');
+		var that = this,
+			elBb = that.get(BOUNDING_BOX);
+
+		that._fields = elBb.all('input:not([type=hidden]):not([type=submit]):not([type=button])');
+		that._fields._nodes = that._fields._nodes.concat(elBb.all('textarea')._nodes);
+//		that._fields._nodes = that._fields._nodes.concat(elBb.all('select')._nodes);
 	},
 
 	renderUI: function() {
@@ -537,4 +582,4 @@ Y.mix(Y.Node.ATTRS, {
 	}
 });
 
-Y.HTML5_form_support = HTML5_form_support;
+Y.HTML5FormSupport = HTML5_form_support;
