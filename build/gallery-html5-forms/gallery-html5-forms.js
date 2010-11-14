@@ -239,6 +239,7 @@ function _validate(elNode) {
 var AFTER_VALIDATION_FUNC = 'aftervalidationfx',
 AUTOFOCUS = 'autofocus',
 BOUNDING_BOX = 'boundingBox',
+CLS_VALID = 'valid',
 MAX = 'max',
 MIN = 'min',
 PATTERN = 'pattern',
@@ -267,7 +268,7 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 	_handleBlur: function(e) {
 		var that = this,
 			elNode = e.target,
-			isValid = that.get(SUPPORTED) ? e.target.test('input:valid') : _validate(elNode),
+			isValid = that.get(SUPPORTED) ? e.target.test(':' + HTML5_form_support.CLS_VALID) : _validate(elNode),
 			afterValidationFx = that.get(AFTER_VALIDATION_FUNC);
 		
 		that.disableForm(isValid && that.isFormValid());
@@ -440,10 +441,11 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 	 */
 	isFormValid: function() {
 		var that = this,
-			isValid = true;
+			isValid = true,
+			fld;
 
 		that._fields.some(function(el) {
-			isValid = isValid && (el.hasClass(HTML5_form_support.CLS_VALID) || el.test('input:valid'));
+			isValid = isValid && (el.hasClass(HTML5_form_support.CLS_VALID) || el.test(':' + HTML5_form_support.CLS_VALID));
 			return ! isValid;
 		});
 
