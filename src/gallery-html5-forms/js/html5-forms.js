@@ -42,8 +42,9 @@ function _blur_or_keydown(elNode, fnCallback) {
  * @private
  */
 function _evaluate_attr_max(elNode) {
-	var max = elNode.get(MAX);
-	return Lang.isValue(max) ? _intvalue(elNode.getValue()) <= max : true;
+	var max = elNode.get(MAX),
+		value = elNode.getValue();
+	return Lang.isValue(max) && value ? _intvalue(value) <= max : true;
 }
 
 /**
@@ -54,8 +55,9 @@ function _evaluate_attr_max(elNode) {
  * @private
  */
 function _evaluate_attr_min(elNode) {
-	var min = elNode.get(MIN);
-	return Lang.isValue(min) ? _intvalue(elNode.getValue()) >= min : true;
+	var min = elNode.get(MIN),
+		value = elNode.getValue();
+	return Lang.isValue(min) && value ? _intvalue(value) >= min : true;
 }
 
 /**
@@ -67,11 +69,12 @@ function _evaluate_attr_min(elNode) {
  */
 function _evaluate_attr_pattern(elNode) {
 	var pattern = elNode.get(PATTERN),
+		value = elNode.getValue(),
 		rx;
 
-	if (pattern) {
+	if (pattern && value) {
 		rx = RegExp(pattern);
-		return elNode.getValue().match(rx);
+		return value.match(rx);
 	}
 
 	return true;
@@ -233,7 +236,8 @@ function _validate(elNode) {
 }
 
 // name shortcuts
-var AUTOFOCUS = 'autofocus',
+var AFTER_VALIDATION_FUNC = 'aftervalidationfx',
+AUTOFOCUS = 'autofocus',
 BOUNDING_BOX = 'boundingBox',
 MAX = 'max',
 MIN = 'min',
@@ -263,10 +267,14 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 	_handleBlur: function(e) {
 		var that = this,
 			elNode = e.target,
-			isValid = that.get(SUPPORTED) ? e.target.test('input:valid') : _validate(elNode);
+			isValid = that.get(SUPPORTED) ? e.target.test('input:valid') : _validate(elNode),
+			afterValidationFx = that.get(AFTER_VALIDATION_FUNC);
 		
 		that.disableForm(isValid && that.isFormValid());
-		that.get('aftervalidationfx')(isValid, elNode, that);
+
+		if (afterValidationFx) {
+			afterValidationFx(isValid, elNode, that);
+		}
 	},
 
 	/**
@@ -316,7 +324,15 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 			bAttachForm = false,
 			bIsSupported = that.get(SUPPORTED);
 
-		if (! bIsSupported) {
+		if (bIsSupported) {
+			// call the after validation function for HTML 5 supporting browsers 
+			if (that.get(AFTER_VALIDATION_FUNC)) {
+				that._fields.each(function(elNode) {
+					_blur_or_keydown(elNode, Y.bind(that._handleBlur, that));
+				});
+			}
+		}
+		else {
 			// todo: can we use the capture phase to delegate events instead?
 			that._fields.each(function(elNode) {
 				var sPattern = elNode.get(PATTERN),
@@ -385,7 +401,7 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 			Y.Modernizr.input.placeholder &&
 			Y.Modernizr.input.required &&
 			Y.Modernizr.input.step,
-			aftervalidationfx = this.get('aftervalidationfx'),
+			aftervalidationfx = this.get(AFTER_VALIDATION_FUNC),
 			elBb = that.get(BOUNDING_BOX);
 
 		that.set(SUPPORTED, supported);
@@ -470,7 +486,7 @@ HTML5_form_support = Y.Base.create('html5_input_attrs', Y.Widget, [], {
 		 */
 		aftervalidationfx: {
 			validator: Lang.isFunction,
-			value: function() {}
+			value: null
 		},
 
 		/**
